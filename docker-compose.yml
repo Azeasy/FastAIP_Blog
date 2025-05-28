@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:14
+    container_name: blog_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blog_user}  # Default to blog_user if not set
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blog_password}  # Default to blog_password if not set
+      POSTGRES_DB: ${POSTGRES_DB:-blog_db}  # Default to blog_db if not set
+    ports:
+      - "5432:${POSTGRES_PORT:-5432}"  # Default to 5432 if POSTGRES_PORT is not set
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blog_network
+
+  redis:
+    image: redis:7
+    container_name: blog_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - blog_network
+
+  app:
+    build:
+      context: .
+      args:
+        ENV: ${ENV:-production}  # Default to production if ENV is not set
+    container_name: blog_app
+    restart: always
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - blog_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  blog_network:
+    driver: bridge
